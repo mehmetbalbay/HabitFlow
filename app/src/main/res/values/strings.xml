@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">HabitFlow</string>
+    <string name="reminder_permission_rationale">Hatırlatmaları gösterebilmemiz için bildirim iznine ihtiyacımız var.</string>
+</resources>

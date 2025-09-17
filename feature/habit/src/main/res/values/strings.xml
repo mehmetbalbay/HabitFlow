@@ -1,0 +1,31 @@
+<resources>
+    <string name="habit_input_hint">Örn. 10.000 adım</string>
+    <string name="habit_add">Ekle</string>
+    <string name="habit_name_error">Lütfen alışkanlık adı gir.</string>
+    <string name="habit_complete">Bugün tamamla</string>
+    <string name="habit_reset">Sıfırla</string>
+    <string name="habit_delete">Sil</string>
+    <string name="habit_completed_badge">Bugün tamamlandı</string>
+    <string name="daily_progress_title">Günlük İlerleme</string>
+    <string name="weekly_progress_title">Haftalık Başarı</string>
+    <string name="habits_title">Alışkanlıklarım</string>
+    <string name="new_habit_title">Yeni Alışkanlık</string>
+    <string name="progress_empty_state">Henüz veri yok. Alışkanlıklarını tamamladıkça grafikler dolacak.</string>
+    <string name="add_habit_screen_title">Yeni alışkanlık ekle</string>
+    <string name="habit_name_label">Alışkanlık adı</string>
+    <string name="reminder_type_label">Hatırlatma tipi</string>
+    <string name="reminder_type_daily">Günlük</string>
+    <string name="reminder_type_weekly">Haftalık</string>
+    <string name="reminder_type_custom">Özel Tarih</string>
+    <string name="daily_time_title">Günlük hatırlatma saati</string>
+    <string name="daily_time_description">Her gün bu saatte bildirim alırsın.</string>
+    <string name="weekly_section_title">Haftalık hatırlatma günü ve saati</string>
+    <string name="custom_section_title">Belirli tarih ve saat</string>
+    <string name="select_time_value">Saat: %1$s</string>
+    <string name="select_time">Saat seç</string>
+    <string name="select_date">Tarih seç</string>
+    <string name="save">Kaydet</string>
+    <string name="hero_greeting">Merhaba 👋</string>
+    <string name="hero_today_label">Bugün, %1$s</string>
+    <string name="profile_action_label">Profilini aç</string>
+</resources>

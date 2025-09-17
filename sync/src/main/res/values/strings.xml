@@ -1,0 +1,10 @@
+<resources>
+    <string name="notification_title">HabitFlow</string>
+    <string name="notification_content">Bugünkü alışkanlıklarını tamamlamayı unutma!</string>
+    <string name="notification_content_habit">"%1$s" alışkanlığını tamamlamayı unutma!</string>
+    <string name="notification_action_complete">Tamamla</string>
+    <string name="notification_action_snooze">Daha sonra</string>
+    <string name="reminder_channel_name">Günlük Hatırlatmalar</string>
+    <string name="reminder_channel_description">Alışkanlıklarını tamamlaman için günlük bildirimler gönderir.</string>
+</resources>
+

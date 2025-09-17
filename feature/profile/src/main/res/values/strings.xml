@@ -1,0 +1,8 @@
+<resources>
+    <string name="profile_action_label">Profilini aç</string>
+    <string name="profile_title">Profilim</string>
+    <string name="profile_email_label">E-posta</string>
+    <string name="profile_email_placeholder">E-posta adresi bulunamadı</string>
+    <string name="profile_email_missing_hint">Hesap e-posta bilgisi bulunamadı. Lütfen çıkış yapıp tekrar dene.</string>
+    <string name="profile_sign_out">Çıkış yap</string>
+</resources>
