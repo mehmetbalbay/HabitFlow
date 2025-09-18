@@ -3,7 +3,7 @@ package com.habitflow.reminder
 import com.habitflow.domain.model.Habit
 import com.habitflow.domain.model.ReminderType
 import com.habitflow.domain.repository.HabitRepository
-import com.habitflow.util.DateUtils
+import com.habitflow.core.ui.DateUtils
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.MutableStateFlow

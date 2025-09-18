@@ -2,22 +2,23 @@ package com.habitflow.core.designsystem.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Primary = Color(0xFF4F46E5)
-val PrimaryVariant = Color(0xFF4338CA)
-val Secondary = Color(0xFF0EA5E9)
-val Tertiary = Color(0xFF14B8A6)
+// Palette (soft, modern, minimalist)
+// Primary browns + soft neutrals
+val Primary = Color(0xFF493628)
+val PrimaryVariant = Color(0xFF3A2C21)
+val Secondary = Color(0xFFAB886D)
+val Tertiary = Color(0xFFD6C0B3)
 
-val BackgroundLight = Color(0xFFF9FAFB)
+val BackgroundLight = Color(0xFFE4E0E1)
 val SurfaceLight = Color(0xFFFFFFFF)
-val OutlineLight = Color(0xFFE2E8F0)
+val OutlineLight = Color(0xFFD6C0B3)
 val OnPrimaryLight = Color(0xFFFFFFFF)
-val OnBackgroundLight = Color(0xFF111827)
-val OnSurfaceLight = Color(0xFF1F2937)
+val OnBackgroundLight = Color(0xFF2C251F)
+val OnSurfaceLight = Color(0xFF3B2F27)
 
-val BackgroundDark = Color(0xFF0F172A)
-val SurfaceDark = Color(0xFF1E293B)
-val OutlineDark = Color(0xFF334155)
+val BackgroundDark = Color(0xFF201A16)
+val SurfaceDark = Color(0xFF2A221D)
+val OutlineDark = Color(0xFF5E4B3E)
 val OnPrimaryDark = Color(0xFFFFFFFF)
-val OnBackgroundDark = Color(0xFFE2E8F0)
-val OnSurfaceDark = Color(0xFFE2E8F0)
-
+val OnBackgroundDark = Color(0xFFE7E1DD)
+val OnSurfaceDark = Color(0xFFE7E1DD)

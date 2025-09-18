@@ -6,10 +6,19 @@ import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -18,25 +27,28 @@ import com.habitflow.feature.auth.presentation.AuthFeedbackType
 import com.habitflow.feature.auth.presentation.AuthViewModel
 import com.habitflow.feature.auth.ui.ForgotPasswordScreen
 import com.habitflow.feature.auth.ui.LoginScreen
-import com.habitflow.feature.auth.ui.OnboardingScreen
+import com.habitflow.feature.onboarding.OnboardingDestinations
+import com.habitflow.feature.onboarding.onboardingGraph
 import com.habitflow.feature.auth.ui.RegisterScreen
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Modifier
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import dagger.hilt.android.lifecycle.HiltViewModel
-import com.habitflow.app.navigation.AppRoute
-import com.habitflow.feature.habit.ui.AddHabitScreen
-import com.habitflow.feature.habit.ui.HabitFlowScreen
-import com.habitflow.feature.profile.ProfileScreen
-import com.habitflow.feature.habit.presentation.HabitViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.core.content.ContextCompat
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 import com.habitflow.BuildConfig
+import com.habitflow.app.navigation.AppRoute
+import com.habitflow.feature.exercise.ExerciseCard
+import com.habitflow.feature.habit.presentation.HabitViewModel
+import com.habitflow.feature.habit.ui.AddHabitScreen
+import com.habitflow.feature.habit.ui.HabitFlowScreen
+import com.habitflow.feature.insights.InsightsScreen
+import com.habitflow.feature.meals.MealsCard
+import com.habitflow.feature.profile.ProfileScreen
+import com.habitflow.feature.settings.SettingsScreen
+import com.habitflow.feature.water.WaterCard
+import dagger.hilt.android.lifecycle.HiltViewModel
 import timber.log.Timber
 
 @HiltViewModel
@@ -48,10 +60,18 @@ class ReminderViewModel @javax.inject.Inject constructor(
     fun cancelAll() = scheduler.cancelReminders()
 }
 
+@HiltViewModel
+class HydrationBinderViewModel @javax.inject.Inject constructor(
+    private val onHydrationUserChanged: com.habitflow.domain.usecase.water.OnHydrationUserChanged
+) : androidx.lifecycle.ViewModel() {
+    fun setUser(userId: String?) = onHydrationUserChanged(userId)
+}
+
 @Composable
 fun AppNavHost(
     navController: NavHostController,
-    onShowToast: (String) -> Unit
+    onShowToast: (String) -> Unit,
+    contentPadding: PaddingValues = PaddingValues()
 ) {
     val context = LocalContext.current
     val authViewModel: AuthViewModel = hiltViewModel()
@@ -59,6 +79,7 @@ fun AppNavHost(
     val authUiState by authViewModel.uiState.collectAsStateWithLifecycle()
     val habitUiState by habitViewModel.uiState.collectAsStateWithLifecycle()
     val reminderViewModel: ReminderViewModel = hiltViewModel()
+    val hydrationBinder: HydrationBinderViewModel = hiltViewModel()
 
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) {
@@ -106,16 +127,29 @@ fun AppNavHost(
         }
     }
 
+    LaunchedEffect(authUiState.userId) {
+        hydrationBinder.setUser(authUiState.userId)
+    }
+
     val startDestination = when {
-        !authUiState.onboardingCompleted -> AppRoute.Onboarding.route
+        !authUiState.onboardingCompleted -> OnboardingDestinations.ROOT
         authUiState.userId.isNullOrEmpty() -> AppRoute.Login.route
         else -> AppRoute.Home.route
     }
 
     NavHost(navController = navController, startDestination = startDestination) {
-        composable(AppRoute.Onboarding.route) {
-            OnboardingScreen(onContinue = { authViewModel.markOnboardingSeen() })
-        }
+        onboardingGraph(navController = navController, onCompleted = {
+            authViewModel.markOnboardingSeen()
+            navController.navigate(AppRoute.Home.route) {
+                popUpTo(OnboardingDestinations.ROOT) { inclusive = true }
+                launchSingleTop = true
+            }
+        }, onLogin = {
+            navController.navigate(AppRoute.Login.route) {
+                popUpTo(OnboardingDestinations.ROOT) { inclusive = true }
+                launchSingleTop = true
+            }
+        })
         composable(AppRoute.Login.route) {
             LoginScreen(
                 uiState = authUiState,
@@ -164,37 +198,46 @@ fun AppNavHost(
                 },
                 containerColor = androidx.compose.ui.graphics.Color.Transparent
             ) { innerPadding ->
-                HabitFlowScreen(
-                    habits = habitUiState.habits,
-                    todayKey = habitUiState.todayKey,
-                    remindersEnabled = habitUiState.remindersEnabled,
-                    dailyCounts = habitUiState.dailyCounts,
-                    weeklyProgress = habitUiState.weeklyProgress,
-                    onToggleHabit = { id, done ->
-                        habitViewModel.markToday(id, done)
-                        if (!done && habitUiState.remindersEnabled) {
-                            reminderViewModel.scheduleMinute()
-                        }
-                    },
-                    onDeleteHabit = { id -> habitViewModel.deleteHabit(id) },
-                    onToggleReminders = { enabled ->
-                        if (enabled) {
-                            val needsPermission = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-                                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-                            if (needsPermission) {
-                                permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                            } else {
-                                habitViewModel.setRemindersEnabled(true)
-                                reminderViewModel.scheduleDaily()
+                Column(
+                    modifier = Modifier
+                        .padding(contentPadding)
+                        .padding(innerPadding),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    WaterCard()
+                    ExerciseCard()
+                    MealsCard()
+                    HabitFlowScreen(
+                        habits = habitUiState.habits,
+                        todayKey = habitUiState.todayKey,
+                        remindersEnabled = habitUiState.remindersEnabled,
+                        dailyCounts = habitUiState.dailyCounts,
+                        weeklyProgress = habitUiState.weeklyProgress,
+                        onToggleHabit = { id, done ->
+                            habitViewModel.markToday(id, done)
+                            if (!done && habitUiState.remindersEnabled) {
+                                reminderViewModel.scheduleMinute()
                             }
-                        } else {
-                            habitViewModel.setRemindersEnabled(false)
-                            reminderViewModel.cancelAll()
-                        }
-                    },
-                    onProfileClick = { navController.navigate(AppRoute.Profile.route) },
-                    modifier = Modifier.padding(innerPadding)
-                )
+                        },
+                        onDeleteHabit = { id -> habitViewModel.deleteHabit(id) },
+                        onToggleReminders = { enabled ->
+                            if (enabled) {
+                                val needsPermission = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                                    ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+                                if (needsPermission) {
+                                    permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                } else {
+                                    habitViewModel.setRemindersEnabled(true)
+                                    reminderViewModel.scheduleDaily()
+                                }
+                            } else {
+                                habitViewModel.setRemindersEnabled(false)
+                                reminderViewModel.cancelAll()
+                            }
+                        },
+                        onProfileClick = { navController.navigate(AppRoute.Profile.route) }
+                    )
+                }
             }
         }
         composable(AppRoute.Add.route) {
@@ -203,8 +246,36 @@ fun AppNavHost(
                     habitViewModel.addHabit(name, type, reminderTime, weeklyDay, customDateTime)
                     navController.popBackStack()
                 },
-                onCancel = { navController.popBackStack() }
+                onCancel = { navController.popBackStack() },
+                modifier = Modifier.padding(contentPadding)
             )
+        }
+        composable(AppRoute.Habits.route) {
+            Column(
+                modifier = Modifier
+                    .padding(contentPadding)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text("Alışkanlıklar", style = MaterialTheme.typography.headlineSmall)
+                HabitFlowScreen(
+                    habits = habitUiState.habits,
+                    todayKey = habitUiState.todayKey,
+                    remindersEnabled = habitUiState.remindersEnabled,
+                    dailyCounts = habitUiState.dailyCounts,
+                    weeklyProgress = habitUiState.weeklyProgress,
+                    onToggleHabit = { id, done -> habitViewModel.markToday(id, done) },
+                    onDeleteHabit = { id -> habitViewModel.deleteHabit(id) },
+                    onToggleReminders = { enabled -> habitViewModel.setRemindersEnabled(enabled) },
+                    onProfileClick = { navController.navigate(AppRoute.Profile.route) }
+                )
+            }
+        }
+        composable(AppRoute.Insights.route) {
+            InsightsScreen(modifier = Modifier.padding(contentPadding))
+        }
+        composable(AppRoute.Settings.route) {
+            SettingsScreen(modifier = Modifier.padding(contentPadding))
         }
         composable(AppRoute.Profile.route) {
             ProfileScreen(
