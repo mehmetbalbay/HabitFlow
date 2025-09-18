@@ -1,9 +1,11 @@
 package com.habitflow.feature.onboarding
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -27,39 +29,41 @@ fun NavGraphBuilder.onboardingGraph(
     onLogin: () -> Unit,
 ) {
     navigation(startDestination = OnboardingDestinations.WELCOME, route = OnboardingDestinations.ROOT) {
-        composable(OnboardingDestinations.WELCOME) {
-            val vm: OnboardingViewModel = hiltViewModel()
+        composable(OnboardingDestinations.WELCOME) { backStackEntry ->
+            val vm = sharedOnboardingViewModel(navController, backStackEntry)
             WelcomeScreen(onNext = {
                 vm.onStart()
                 navController.navigate(OnboardingDestinations.GOALS)
             }, onLogin = onLogin)
         }
-        composable(OnboardingDestinations.GOALS) {
-            val vm: OnboardingViewModel = hiltViewModel()
+        composable(OnboardingDestinations.GOALS) { backStackEntry ->
+            val vm = sharedOnboardingViewModel(navController, backStackEntry)
             val state = vm.uiState.collectAsStateWithLifecycle().value
             GoalsScreen(
                 selected = state.goals,
                 other = state.otherGoal,
                 onToggle = vm::toggleGoal,
                 onOtherChanged = vm::setOtherGoal,
+                validation = state.validation,
                 onNext = { navController.navigate(OnboardingDestinations.SLEEP) },
                 onBack = { navController.popBackStack() }
             )
         }
-        composable(OnboardingDestinations.SLEEP) {
-            val vm: OnboardingViewModel = hiltViewModel()
+        composable(OnboardingDestinations.SLEEP) { backStackEntry ->
+            val vm = sharedOnboardingViewModel(navController, backStackEntry)
             val state = vm.uiState.collectAsStateWithLifecycle().value
             SleepScreen(
                 state = state,
                 onWakeChange = vm::setWake,
                 onSleepChange = vm::setSleep,
                 onNightShiftToggle = vm::setNightShift,
+                validation = state.validation,
                 onNext = { navController.navigate(OnboardingDestinations.ROUTINE) },
                 onBack = { navController.popBackStack() }
             )
         }
-        composable(OnboardingDestinations.ROUTINE) {
-            val vm: OnboardingViewModel = hiltViewModel()
+        composable(OnboardingDestinations.ROUTINE) { backStackEntry ->
+            val vm = sharedOnboardingViewModel(navController, backStackEntry)
             val state = vm.uiState.collectAsStateWithLifecycle().value
             RoutineBlocksScreen(
                 blocks = state.workBlocks,
@@ -87,12 +91,13 @@ fun NavGraphBuilder.onboardingGraph(
                     }
                 },
                 onLabelChange = vm::setWorkBlockLabel,
+                validation = state.validation,
                 onNext = { navController.navigate(OnboardingDestinations.MEALS) },
                 onBack = { navController.popBackStack() }
             )
         }
-        composable(OnboardingDestinations.MEALS) {
-            val vm: OnboardingViewModel = hiltViewModel()
+        composable(OnboardingDestinations.MEALS) { backStackEntry ->
+            val vm = sharedOnboardingViewModel(navController, backStackEntry)
             val state = vm.uiState.collectAsStateWithLifecycle().value
             MealsScreen(
                 meals = state.mealWindows,
@@ -100,12 +105,13 @@ fun NavGraphBuilder.onboardingGraph(
                 onUpdate = vm::updateMeal,
                 onAddSnack = vm::addSnack,
                 onRemoveAt = vm::removeMeal,
+                validation = state.validation,
                 onNext = { navController.navigate(OnboardingDestinations.EXERCISE) },
                 onBack = { navController.popBackStack() }
             )
         }
-        composable(OnboardingDestinations.EXERCISE) {
-            val vm: OnboardingViewModel = hiltViewModel()
+        composable(OnboardingDestinations.EXERCISE) { backStackEntry ->
+            val vm = sharedOnboardingViewModel(navController, backStackEntry)
             val state = vm.uiState.collectAsStateWithLifecycle().value
             ExerciseScreen(
                 slots = state.exerciseSlots,
@@ -114,8 +120,8 @@ fun NavGraphBuilder.onboardingGraph(
                 onBack = { navController.popBackStack() }
             )
         }
-        composable(OnboardingDestinations.HYDRATION) {
-            val vm: OnboardingViewModel = hiltViewModel()
+        composable(OnboardingDestinations.HYDRATION) { backStackEntry ->
+            val vm = sharedOnboardingViewModel(navController, backStackEntry)
             val state = vm.uiState.collectAsStateWithLifecycle().value
             HydrationScreen(
                 value = state.hydrationGoal,
@@ -126,32 +132,46 @@ fun NavGraphBuilder.onboardingGraph(
                 onWeightChange = vm::setWeightText,
                 suggestion = vm.suggestedHydration(),
                 onApplySuggestion = vm::applySuggestedHydration,
+                validation = state.validation,
                 onNext = { navController.navigate(OnboardingDestinations.QUIET) },
                 onBack = { navController.popBackStack() }
             )
         }
-        composable(OnboardingDestinations.QUIET) {
-            val vm: OnboardingViewModel = hiltViewModel()
+        composable(OnboardingDestinations.QUIET) { backStackEntry ->
+            val vm = sharedOnboardingViewModel(navController, backStackEntry)
             val state = vm.uiState.collectAsStateWithLifecycle().value
             QuietHoursScreen(
                 start = state.quietStart,
                 end = state.quietEnd,
                 onStartChange = vm::setQuietStart,
                 onEndChange = vm::setQuietEnd,
+                validation = state.validation,
                 onNext = { navController.navigate(OnboardingDestinations.PREVIEW) },
                 onBack = { navController.popBackStack() }
             )
         }
-        composable(OnboardingDestinations.PREVIEW) {
-            val vm: OnboardingViewModel = hiltViewModel()
+        composable(OnboardingDestinations.PREVIEW) { backStackEntry ->
+            val vm = sharedOnboardingViewModel(navController, backStackEntry)
             val state = vm.uiState.collectAsStateWithLifecycle().value
             PreviewScreen(
                 state = state,
                 onConfirm = {
                     vm.confirm(onCompleted)
                 },
+                onNavigateToStep = { route -> navController.navigate(route) },
                 onBack = { navController.popBackStack() }
             )
         }
     }
+}
+
+@Composable
+private fun sharedOnboardingViewModel(
+    navController: NavHostController,
+    backStackEntry: NavBackStackEntry
+): OnboardingViewModel {
+    val parentEntry = remember(backStackEntry) {
+        navController.getBackStackEntry(OnboardingDestinations.ROOT)
+    }
+    return hiltViewModel(parentEntry)
 }

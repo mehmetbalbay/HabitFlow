@@ -2,6 +2,7 @@ package com.habitflow.core.data.di
 
 import android.content.Context
 import com.habitflow.core.data.preferences.AppPreferences
+import com.habitflow.core.data.prefs.OnboardingPreferenceStore
 import com.habitflow.core.data.prefs.OnboardingPrefs
 import dagger.Module
 import dagger.Provides
@@ -21,6 +22,6 @@ object PreferencesModule {
 
     @Provides
     @Singleton
-    fun provideOnboardingPrefs(@ApplicationContext context: Context): OnboardingPrefs =
+    fun provideOnboardingPrefs(@ApplicationContext context: Context): OnboardingPreferenceStore =
         OnboardingPrefs(context)
 }

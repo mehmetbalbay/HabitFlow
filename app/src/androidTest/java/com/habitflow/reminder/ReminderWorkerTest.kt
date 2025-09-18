@@ -11,7 +11,6 @@ import com.habitflow.core.database.entity.HabitCompletionEntity
 import com.habitflow.core.database.entity.HabitEntity
 import com.habitflow.core.database.entity.SettingsEntity
 import com.habitflow.domain.model.ReminderType
-import com.habitflow.util.DateUtils
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -37,20 +36,20 @@ class ReminderWorkerTest {
 
         HabitFlowDatabase.setTestInstance { database }
 
-        ReminderScheduler.onShowReminder = { _, habitId, habitName ->
+        ReminderScheduler.setOnShowReminderForTesting { _, habitId, habitName ->
             showCalls += habitId to habitName
         }
-        ReminderScheduler.onScheduleMinuteReminder = { _, delay, habitId, habitName ->
+        ReminderScheduler.setOnScheduleMinuteReminderForTesting { _, delay, habitId, habitName ->
             minuteCalls += MinuteCall(delay, habitId, habitName)
         }
-        ReminderScheduler.notificationsEnabledOverride = true
+        ReminderScheduler.setNotificationsEnabledOverrideForTesting(true)
     }
 
     @After
     fun tearDown() {
-        ReminderScheduler.onShowReminder = null
-        ReminderScheduler.onScheduleMinuteReminder = null
-        ReminderScheduler.notificationsEnabledOverride = null
+        ReminderScheduler.setOnShowReminderForTesting(null)
+        ReminderScheduler.setOnScheduleMinuteReminderForTesting(null)
+        ReminderScheduler.setNotificationsEnabledOverrideForTesting(null)
         HabitFlowDatabase.setTestInstance(null)
         database.close()
         showCalls.clear()
@@ -75,7 +74,7 @@ class ReminderWorkerTest {
     @Test
     fun showsReminderForNextIncompleteHabit() = runBlocking {
         val dao = database.habitDao()
-        val todayKey = DateUtils.todayKey()
+        val todayKey = todayKey()
         dao.upsertSettings(SettingsEntity(remindersEnabled = true))
         dao.insertHabit(
             HabitEntity(
@@ -120,4 +119,6 @@ class ReminderWorkerTest {
         val habitId: String?,
         val habitName: String?
     )
+
+    private fun todayKey(): String = java.time.LocalDate.now().toString()
 }

@@ -16,16 +16,22 @@ object OnboardingKeys {
     val LAST_PROFILE_SNAPSHOT = stringPreferencesKey("last_profile_snapshot_json")
 }
 
-class OnboardingPrefs(private val context: Context) {
-    val completed: Flow<Boolean> = context.dataStore.data.map { it[OnboardingKeys.COMPLETED] ?: false }
+interface OnboardingPreferenceStore {
+    val completed: Flow<Boolean>
+    suspend fun setCompleted(value: Boolean)
+    suspend fun setLastProfileSnapshot(json: String)
+}
 
-    suspend fun setCompleted(value: Boolean) {
+class OnboardingPrefs(private val context: Context) : OnboardingPreferenceStore {
+    override val completed: Flow<Boolean> = context.dataStore.data.map { it[OnboardingKeys.COMPLETED] ?: false }
+
+    override suspend fun setCompleted(value: Boolean) {
         context.dataStore.edit { prefs: MutablePreferences ->
             prefs[OnboardingKeys.COMPLETED] = value
         }
     }
 
-    suspend fun setLastProfileSnapshot(json: String) {
+    override suspend fun setLastProfileSnapshot(json: String) {
         context.dataStore.edit { prefs -> prefs[OnboardingKeys.LAST_PROFILE_SNAPSHOT] = json }
     }
 }

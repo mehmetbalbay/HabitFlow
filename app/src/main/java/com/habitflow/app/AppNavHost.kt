@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,7 +25,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import com.habitflow.feature.auth.presentation.AuthFeedbackType
+import com.habitflow.feature.auth.presentation.AuthUiState
 import com.habitflow.feature.auth.presentation.AuthViewModel
 import com.habitflow.feature.auth.ui.ForgotPasswordScreen
 import com.habitflow.feature.auth.ui.LoginScreen
@@ -131,22 +135,39 @@ fun AppNavHost(
         hydrationBinder.setUser(authUiState.userId)
     }
 
-    val startDestination = when {
-        !authUiState.onboardingCompleted -> OnboardingDestinations.ROOT
-        authUiState.userId.isNullOrEmpty() -> AppRoute.Login.route
-        else -> AppRoute.Home.route
-    }
+    val startDestination = AppRoute.Splash.route
 
     NavHost(navController = navController, startDestination = startDestination) {
+        composable(AppRoute.Splash.route) {
+            // Decide initial route once state is available; no UI to avoid flicker
+            LaunchedEffect(
+                authUiState.initialRouteResolved,
+                authUiState.onboardingCompleted,
+                authUiState.userId
+            ) {
+                if (!authUiState.initialRouteResolved) return@LaunchedEffect
+                val target = resolveInitialRoute(authUiState)
+                navController.navigate(target) {
+                    popUpTo(AppRoute.Splash.route) { inclusive = true }
+                    launchSingleTop = true
+                }
+            }
+
+            // Optional lightweight placeholder to avoid blank frame
+            androidx.compose.foundation.layout.Box(Modifier.padding(contentPadding)) { }
+        }
+
         onboardingGraph(navController = navController, onCompleted = {
+            val next = resolvePostOnboardingTarget(authUiState)
+            navController.popBackStack(OnboardingDestinations.ROOT, inclusive = true)
             authViewModel.markOnboardingSeen()
-            navController.navigate(AppRoute.Home.route) {
-                popUpTo(OnboardingDestinations.ROOT) { inclusive = true }
+            navController.navigate(next) {
+                popUpTo(AppRoute.Splash.route) { inclusive = true }
                 launchSingleTop = true
             }
         }, onLogin = {
             navController.navigate(AppRoute.Login.route) {
-                popUpTo(OnboardingDestinations.ROOT) { inclusive = true }
+                popUpTo(AppRoute.Splash.route) { inclusive = true }
                 launchSingleTop = true
             }
         })
@@ -167,6 +188,19 @@ fun AppNavHost(
                 },
                 onDismissFeedback = { authViewModel.clearFeedback() }
             )
+
+            // If user logs in successfully while on Login, go to Home and clear back stack
+            val backStackEntry = navController.currentBackStackEntryAsState().value
+            LaunchedEffect(authUiState.userId, authUiState.onboardingCompleted, backStackEntry?.destination?.route) {
+                if (!authUiState.userId.isNullOrEmpty() && authUiState.onboardingCompleted &&
+                    backStackEntry?.destination?.route == AppRoute.Login.route
+                ) {
+                    navController.navigate(AppRoute.Home.route) {
+                        popUpTo(AppRoute.Login.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
+            }
         }
         composable(AppRoute.Register.route) {
             RegisterScreen(
@@ -200,6 +234,7 @@ fun AppNavHost(
             ) { innerPadding ->
                 Column(
                     modifier = Modifier
+                        .verticalScroll(rememberScrollState())
                         .padding(contentPadding)
                         .padding(innerPadding),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -253,6 +288,7 @@ fun AppNavHost(
         composable(AppRoute.Habits.route) {
             Column(
                 modifier = Modifier
+                    .verticalScroll(rememberScrollState())
                     .padding(contentPadding)
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -293,3 +329,12 @@ fun AppNavHost(
         }
     }
 }
+
+internal fun resolveInitialRoute(state: AuthUiState): String = when {
+    !state.onboardingCompleted -> OnboardingDestinations.ROOT
+    state.userId.isNullOrEmpty() -> AppRoute.Login.route
+    else -> AppRoute.Home.route
+}
+
+internal fun resolvePostOnboardingTarget(state: AuthUiState): String =
+    if (state.userId.isNullOrEmpty()) AppRoute.Login.route else AppRoute.Home.route

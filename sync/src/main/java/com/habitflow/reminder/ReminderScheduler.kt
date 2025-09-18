@@ -14,6 +14,7 @@ import android.text.style.StyleSpan
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import androidx.annotation.VisibleForTesting
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
@@ -37,6 +38,27 @@ object ReminderScheduler {
     internal var onShowReminder: ((Context, String?, String?) -> Unit)? = null
     internal var onScheduleMinuteReminder: ((Context, Long, String?, String?) -> Unit)? = null
     internal var notificationsEnabledOverride: Boolean? = null
+
+    @VisibleForTesting
+    fun setOnScheduleMinuteReminderForTesting(handler: ((Context, Long, String?, String?) -> Unit)?) {
+        onScheduleMinuteReminder = handler
+    }
+
+    @VisibleForTesting
+    fun setOnShowReminderForTesting(handler: ((Context, String?, String?) -> Unit)?) {
+        onShowReminder = handler
+    }
+
+    @VisibleForTesting
+    fun setNotificationsEnabledOverrideForTesting(value: Boolean?) {
+        notificationsEnabledOverride = value
+    }
+
+    @VisibleForTesting
+    fun keyHabitIdForTesting(): String = KEY_HABIT_ID
+
+    @VisibleForTesting
+    fun keyHabitNameForTesting(): String = KEY_HABIT_NAME
 
     fun createNotificationChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

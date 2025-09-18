@@ -11,8 +11,8 @@ import com.habitflow.domain.usecase.ObserveReminderSetting
 import com.habitflow.domain.usecase.OnUserChanged
 import com.habitflow.domain.usecase.SetRemindersEnabled
 import com.habitflow.domain.usecase.ToggleHabitCompletion
+import com.habitflow.feature.habit.presentation.HabitViewModel
 import com.habitflow.testing.MainDispatcherRule
-import com.habitflow.util.DateUtils
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -25,6 +25,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import java.time.LocalDate
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class HabitViewModelTest {
@@ -46,7 +47,7 @@ class HabitViewModelTest {
         every { repository.habits } returns habitsFlow
         every { repository.remindersEnabled } returns remindersFlow
         coEvery { repository.addHabit(any(), any(), any(), any(), any()) } answers {
-            Habit(id = "generated", name = arg(0), createdAt = DateUtils.dateKey(java.time.LocalDate.now()))
+            Habit(id = "generated", name = arg(0), createdAt = dateKey(LocalDate.now()))
         }
 
         val useCases = HabitUseCases(
@@ -70,7 +71,7 @@ class HabitViewModelTest {
 
     @Test
     fun `ui state stays in sync with repository flows`() {
-        val todayKey = DateUtils.todayKey()
+        val todayKey = todayKey()
         val habits = listOf(
             Habit(
                 id = "1",
@@ -98,7 +99,7 @@ class HabitViewModelTest {
     fun `markToday delegates completion update to repository`() {
         val habitId = "habit-1"
         viewModel.markToday(habitId, true)
-        verify { repository.toggleCompletion(habitId, DateUtils.todayKey(), true) }
+        verify { repository.toggleCompletion(habitId, todayKey(), true) }
     }
 
     @Test
@@ -126,3 +127,7 @@ class HabitViewModelTest {
         coVerify { repository.addHabit("Kitap", ReminderType.DAILY, "09:00", null, null) }
     }
 }
+
+private fun todayKey(): String = LocalDate.now().toString()
+
+private fun dateKey(date: LocalDate): String = date.toString()

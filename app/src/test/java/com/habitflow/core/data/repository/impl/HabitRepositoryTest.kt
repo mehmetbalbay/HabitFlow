@@ -2,7 +2,6 @@ package com.habitflow.core.data.repository.impl
 
 import com.habitflow.core.data.repository.impl.DefaultHabitRepository
 import com.habitflow.core.data.source.remote.HabitRemoteSync
-import com.habitflow.core.database.HabitFlowDatabase
 import com.habitflow.core.database.dao.HabitDao
 import com.habitflow.core.database.entity.HabitCompletionEntity
 import com.habitflow.core.database.entity.HabitEntity
@@ -58,11 +57,6 @@ class HabitRepositoryTest {
         repository = DefaultHabitRepository(
             habitDao = habitDao,
             remoteSync = remoteSync,
-            database = object : HabitFlowDatabase() {
-                override fun habitDao(): HabitDao = habitDao
-                override fun clearAllTables() {}
-            },
-            ioDispatcher = dispatcher,
             dateProvider = object : DateProvider { override fun today(): LocalDate = fixedDate },
             uuidProvider = { "generated-id" },
             externalScope = testScope,

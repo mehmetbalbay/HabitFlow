@@ -5,9 +5,6 @@ import android.content.Intent
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.habitflow.domain.model.Habit
-import com.habitflow.domain.model.ReminderType
-import com.habitflow.domain.repository.HabitRepository
-import com.habitflow.util.DateUtils
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import dagger.hilt.android.testing.UninstallModules
@@ -42,16 +39,16 @@ class ReminderActionReceiverTest {
         hiltRule.inject()
         context = ApplicationProvider.getApplicationContext()
         repository.reset()
-        ReminderScheduler.onScheduleMinuteReminder = { _, delay, habitId, habitName ->
+        ReminderScheduler.setOnScheduleMinuteReminderForTesting { _, delay, habitId, habitName ->
             minuteCalls += MinuteCall(delay, habitId, habitName)
         }
-        ReminderScheduler.notificationsEnabledOverride = true
+        ReminderScheduler.setNotificationsEnabledOverrideForTesting(true)
     }
 
     @After
     fun tearDown() {
-        ReminderScheduler.onScheduleMinuteReminder = null
-        ReminderScheduler.notificationsEnabledOverride = null
+        ReminderScheduler.setOnScheduleMinuteReminderForTesting(null)
+        ReminderScheduler.setNotificationsEnabledOverrideForTesting(null)
         minuteCalls.clear()
         repository.reset()
     }
@@ -62,14 +59,14 @@ class ReminderActionReceiverTest {
         val habitName = "Meditate"
         val intent = Intent(context, ReminderActionReceiver::class.java).apply {
             action = ReminderActionReceiver.ACTION_MARK_COMPLETE
-            putExtra(ReminderScheduler.KEY_HABIT_ID, habitId)
-            putExtra(ReminderScheduler.KEY_HABIT_NAME, habitName)
+            putExtra(ReminderScheduler.keyHabitIdForTesting(), habitId)
+            putExtra(ReminderScheduler.keyHabitNameForTesting(), habitName)
             putExtra("notification_id", 42)
         }
 
         ReminderActionReceiver().onReceive(context, intent)
 
-        val todayKey = DateUtils.todayKey()
+        val todayKey = todayKey()
         assertEquals(listOf(ToggleCall(habitId, todayKey, true)), repository.toggleCalls)
         assertEquals(1, minuteCalls.size)
         val minuteCall = minuteCalls.first()
@@ -85,8 +82,8 @@ class ReminderActionReceiverTest {
         val snoozeMinutes = 15L
         val intent = Intent(context, ReminderActionReceiver::class.java).apply {
             action = ReminderActionReceiver.ACTION_SNOOZE
-            putExtra(ReminderScheduler.KEY_HABIT_ID, habitId)
-            putExtra(ReminderScheduler.KEY_HABIT_NAME, habitName)
+            putExtra(ReminderScheduler.keyHabitIdForTesting(), habitId)
+            putExtra(ReminderScheduler.keyHabitNameForTesting(), habitName)
             putExtra("notification_id", 99)
             putExtra("snooze_minutes", snoozeMinutes)
         }
@@ -104,3 +101,5 @@ class ReminderActionReceiverTest {
     private data class MinuteCall(val delayMinutes: Long, val habitId: String?, val habitName: String?)
 
 }
+
+private fun todayKey(): String = java.time.LocalDate.now().toString()

@@ -2,6 +2,7 @@ package com.habitflow.feature.onboarding
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -17,7 +18,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.LocalDrink
+import androidx.compose.material.icons.filled.DoNotDisturbOn
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Restaurant
@@ -65,7 +69,7 @@ fun WelcomeScreen(
             title = "Hoş geldin",
             subtitle = "Küçük alışkanlıklar büyük değişimlere yol açar. Gel, gününü birlikte kurgulayalım.",
             primaryAction = OnboardingPrimaryAction("Planımı Oluştur", onNext),
-            secondaryAction = OnboardingSecondaryAction("Zaten hesabım var", onLogin)
+            secondaryAction = OnboardingSecondaryAction(label = "Zaten hesabım var", onClick = onLogin)
         ) {
             HeroIllustration()
             Text(
@@ -86,6 +90,7 @@ fun GoalsScreen(
     other: String,
     onToggle: (String) -> Unit,
     onOtherChanged: (String) -> Unit,
+    validation: OnboardingValidation,
     onNext: () -> Unit,
     onBack: () -> Unit,
 ) {
@@ -97,7 +102,7 @@ fun GoalsScreen(
             title = "Hedeflerini seç",
             subtitle = "HabitFlow’dan ne bekliyorsun? Birden fazla seçim yapabilirsin.",
             onBack = onBack,
-            primaryAction = OnboardingPrimaryAction("Devam", onNext),
+            primaryAction = OnboardingPrimaryAction("Devam", onNext, enabled = validation.goalsValid),
             secondaryAction = OnboardingSecondaryAction(label = "Geri", onClick = onBack)
         ) {
             FlowRow(
@@ -128,6 +133,13 @@ fun GoalsScreen(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
             )
+            validation.goalsError?.let { error ->
+                Text(
+                    text = error,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
         }
     }
 }
@@ -138,6 +150,7 @@ fun SleepScreen(
     onWakeChange: (String) -> Unit,
     onSleepChange: (String) -> Unit,
     onNightShiftToggle: (Boolean) -> Unit,
+    validation: OnboardingValidation,
     onNext: () -> Unit,
     onBack: () -> Unit,
 ) {
@@ -150,7 +163,7 @@ fun SleepScreen(
             title = "Uyku düzeni",
             subtitle = "Uyanış ve uyku saatlerini paylaş, gün planını ona göre kuralım.",
             onBack = onBack,
-            primaryAction = OnboardingPrimaryAction("Devam", onNext),
+            primaryAction = OnboardingPrimaryAction("Devam", onNext, enabled = validation.sleepValid),
             secondaryAction = OnboardingSecondaryAction(label = "Geri", onClick = onBack)
         ) {
             TimeSlider(
@@ -170,6 +183,7 @@ fun SleepScreen(
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(16.dp))
                     .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.08f))
+                    .clickable { onNightShiftToggle(!state.night) }
                     .padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -188,6 +202,13 @@ fun SleepScreen(
                     colors = SwitchDefaults.colors(checkedThumbColor = MaterialTheme.colorScheme.primary)
                 )
             }
+            validation.sleepError?.let { error ->
+                Text(
+                    text = error,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
         }
     }
 }
@@ -203,6 +224,7 @@ fun RoutineBlocksScreen(
     onEndMinus: (Int) -> Unit,
     onEndPlus: (Int) -> Unit,
     onLabelChange: (Int, String) -> Unit,
+    validation: OnboardingValidation,
     onNext: () -> Unit,
     onBack: () -> Unit,
 ) {
@@ -213,7 +235,7 @@ fun RoutineBlocksScreen(
             title = "Gün içi bloklar",
             subtitle = "İş/okul veya odak bloklarını ekle. Saatleri gerektiğinde ayarlayabilirsin.",
             onBack = onBack,
-            primaryAction = OnboardingPrimaryAction("Devam", onNext),
+            primaryAction = OnboardingPrimaryAction("Devam", onNext, enabled = validation.routineValid),
             secondaryAction = OnboardingSecondaryAction(label = "Geri", onClick = onBack)
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -229,11 +251,21 @@ fun RoutineBlocksScreen(
                     )
                 }
                 AssistChip(
-                    onClick = { onAddAuto() },
+                    onClick = {
+                        onAdd(com.habitflow.domain.model.TimeBlock(start = "09:00", end = "18:00", label = "İş"))
+                        onAddAuto()
+                    },
                     label = { Text("Akıllı blok ekle") },
                     leadingIcon = { Icon(Icons.Filled.Add, contentDescription = null) },
                     colors = AssistChipDefaults.assistChipColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
                 )
+                validation.routineError?.let { error ->
+                    Text(
+                        text = error,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
             }
         }
     }
@@ -246,6 +278,7 @@ fun MealsScreen(
     onUpdate: (Int, String) -> Unit,
     onAddSnack: () -> Unit,
     onRemoveAt: (Int) -> Unit,
+    validation: OnboardingValidation,
     onNext: () -> Unit,
     onBack: () -> Unit,
 ) {
@@ -256,10 +289,14 @@ fun MealsScreen(
             title = "Öğün zamanları",
             subtitle = "Ana öğünleri ve ara öğünleri planla. Zamanları 30 dk adımlarla ayarlayabilirsin.",
             onBack = onBack,
-            primaryAction = OnboardingPrimaryAction("Devam", onNext),
+            primaryAction = OnboardingPrimaryAction("Devam", onNext, enabled = validation.mealsValid),
             secondaryAction = OnboardingSecondaryAction(label = "Geri", onClick = onBack)
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                // Add summary text for large datasets to ensure visibility
+                if (meals.size > 10) {
+                    Text("Toplam ${meals.size} öğün", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
                 meals.forEachIndexed { index, meal ->
                     MealCard(
                         meal = meal,
@@ -287,9 +324,9 @@ fun MealsScreen(
                         leadingIcon = { Icon(Icons.Filled.Add, contentDescription = null) }
                     )
                 }
-                if (meals.size < 2) {
+                validation.mealsError?.let { error ->
                     Text(
-                        text = "En az iki öğün zamanı belirlemelisin.",
+                        text = error,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error
                     )
@@ -353,6 +390,7 @@ fun HydrationScreen(
     onWeightChange: (String) -> Unit,
     suggestion: Int?,
     onApplySuggestion: () -> Unit,
+    validation: OnboardingValidation,
     onNext: () -> Unit,
     onBack: () -> Unit,
 ) {
@@ -363,7 +401,7 @@ fun HydrationScreen(
             title = "Su hedefi",
             subtitle = "Günlük hedefini belirle. Boy/kilo girerek kişiselleştirilmiş öneri alabilirsin.",
             onBack = onBack,
-            primaryAction = OnboardingPrimaryAction("Devam", onNext),
+            primaryAction = OnboardingPrimaryAction("Devam", onNext, enabled = validation.hydrationValid),
             secondaryAction = OnboardingSecondaryAction(label = "Geri", onClick = onBack)
         ) {
             HydrationCard(
@@ -376,6 +414,13 @@ fun HydrationScreen(
                 suggestion = suggestion,
                 onApplySuggestion = onApplySuggestion
             )
+            validation.hydrationError?.let { error ->
+                Text(
+                    text = error,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
         }
     }
 }
@@ -386,6 +431,7 @@ fun QuietHoursScreen(
     end: String,
     onStartChange: (String) -> Unit,
     onEndChange: (String) -> Unit,
+    validation: OnboardingValidation,
     onNext: () -> Unit,
     onBack: () -> Unit,
 ) {
@@ -398,7 +444,7 @@ fun QuietHoursScreen(
             title = "Sessiz saatler",
             subtitle = "Bildirimleri rahatsız etmediğimiz saat aralığını belirleyelim.",
             onBack = onBack,
-            primaryAction = OnboardingPrimaryAction("Devam", onNext),
+            primaryAction = OnboardingPrimaryAction("Devam", onNext, enabled = validation.quietHoursValid),
             secondaryAction = OnboardingSecondaryAction(label = "Geri", onClick = onBack)
         ) {
             TimeSlider(
@@ -413,14 +459,23 @@ fun QuietHoursScreen(
                 sliderValue = endValue,
                 onValueChange = { onEndChange(formatHour(it.toInt())) }
             )
+            validation.quietHoursError?.let { error ->
+                Text(
+                    text = error,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
         }
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PreviewScreen(
     state: OnboardingState,
     onConfirm: () -> Unit,
+    onNavigateToStep: (String) -> Unit,
     onBack: () -> Unit,
 ) {
     val timeline = remember(state) {
@@ -428,6 +483,8 @@ fun PreviewScreen(
             add(TimelineItem(state.wake, "Uyanış", TimelineType.WAKE))
             addAll(state.mealWindows.map { TimelineItem(it.time, it.mealType, TimelineType.MEAL) })
             addAll(state.exerciseSlots.map { TimelineItem(it.start, "Egzersiz (${it.label})", TimelineType.EXERCISE) })
+            add(TimelineItem(state.quietStart, "Sessiz saat başlıyor", TimelineType.QUIET))
+            add(TimelineItem(state.quietEnd, "Sessiz saat bitiyor", TimelineType.QUIET))
         }.sortedBy { TimeUtils.parseHm(it.time) }
     }
     OnboardingTheme {
@@ -437,18 +494,91 @@ fun PreviewScreen(
             title = "Günün hazır",
             subtitle = "Planını gözden geçir ve dilediğin zaman geri dönüp düzenle.",
             onBack = onBack,
-            primaryAction = OnboardingPrimaryAction("Onayla ve Devam Et", onConfirm),
-            secondaryAction = OnboardingSecondaryAction("Geri") { onBack() }
+            primaryAction = OnboardingPrimaryAction(
+                label = "Onayla ve Devam Et",
+                onClick = onConfirm,
+                enabled = state.validation.allValid
+            ),
+            secondaryAction = OnboardingSecondaryAction(label = "Geri", onClick = onBack)
         ) {
             Text(
                 text = "Su hedefi: ${state.hydrationGoal} ml",
                 style = MaterialTheme.typography.titleMedium
             )
-            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                timeline.forEach { item ->
-                    TimelineRow(item)
+            if (!state.validation.allValid) {
+                Text(
+                    text = "Eksik ya da hatalı alanları kontrol et.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+                val firstInvalidRoute = when {
+                    !state.validation.sleepValid -> OnboardingDestinations.SLEEP
+                    !state.validation.routineValid -> OnboardingDestinations.ROUTINE
+                    !state.validation.mealsValid -> OnboardingDestinations.MEALS
+                    !state.validation.hydrationValid -> OnboardingDestinations.HYDRATION
+                    !state.validation.quietHoursValid -> OnboardingDestinations.QUIET
+                    else -> null
+                }
+                if (firstInvalidRoute != null) {
+                    Spacer(Modifier.height(8.dp))
+                    AssistChip(onClick = { onNavigateToStep(firstInvalidRoute) }, label = { Text("Eksikleri düzelt") })
                 }
             }
+            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                timeline.forEach { item ->
+                    TimelineRow(item, onClick = {
+                        val route = when (item.type) {
+                            TimelineType.WAKE -> OnboardingDestinations.SLEEP
+                            TimelineType.MEAL -> OnboardingDestinations.MEALS
+                            TimelineType.EXERCISE -> OnboardingDestinations.EXERCISE
+                            TimelineType.QUIET -> OnboardingDestinations.QUIET
+                        }
+                        onNavigateToStep(route)
+                    })
+                }
+            }
+
+            // Selected goals as chips (if any)
+            val goalChips = remember(state.goals, state.otherGoal) {
+                (state.goals + state.otherGoal.takeIf { it.isNotBlank() }.orEmpty())
+                    .filter { it.isNotBlank() }
+            }
+            if (goalChips.isNotEmpty()) {
+                Text("Hedefler", style = MaterialTheme.typography.titleMedium)
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    goalChips.forEach { g ->
+                        AssistChip(onClick = { onNavigateToStep(OnboardingDestinations.GOALS) }, label = { Text(g) })
+                    }
+                }
+            }
+
+            // Additional quick links for non-timeline items
+            Spacer(Modifier.height(8.dp))
+            SummaryRow(
+                icon = Icons.Filled.Check,
+                tint = MaterialTheme.colorScheme.primary,
+                title = "Hedefler",
+                subtitle = if (state.goals.isEmpty() && state.otherGoal.isBlank()) "(Opsiyonel)" else state.goals.joinToString().ifBlank { state.otherGoal },
+                onClick = { onNavigateToStep(OnboardingDestinations.GOALS) }
+            )
+            SummaryRow(
+                icon = Icons.Filled.LocalDrink,
+                tint = MaterialTheme.colorScheme.secondary,
+                title = "Su hedefi",
+                subtitle = "${state.hydrationGoal} ml",
+                onClick = { onNavigateToStep(OnboardingDestinations.HYDRATION) }
+            )
+            SummaryRow(
+                icon = Icons.Filled.AccessTime,
+                tint = MaterialTheme.colorScheme.tertiary,
+                title = "Sessiz saatler",
+                subtitle = "Ayarlandı",
+                onClick = { onNavigateToStep(OnboardingDestinations.QUIET) }
+            )
         }
     }
 }
@@ -634,14 +764,15 @@ private fun HydrationCard(
 
 private data class TimelineItem(val time: String, val label: String, val type: TimelineType)
 
-private enum class TimelineType { WAKE, MEAL, EXERCISE }
+private enum class TimelineType { WAKE, MEAL, EXERCISE, QUIET }
 
 @Composable
-private fun TimelineRow(item: TimelineItem) {
+private fun TimelineRow(item: TimelineItem, onClick: (() -> Unit)? = null) {
     val (icon, tint) = when (item.type) {
         TimelineType.WAKE -> Icons.Default.AccessTime to Color(0xFF3F51B5)
         TimelineType.MEAL -> Icons.Default.Restaurant to Color(0xFF4CAF50)
         TimelineType.EXERCISE -> Icons.Default.FitnessCenter to Color(0xFFE91E63)
+        TimelineType.QUIET -> Icons.Default.DoNotDisturbOn to MaterialTheme.colorScheme.outline
     }
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -650,6 +781,7 @@ private fun TimelineRow(item: TimelineItem) {
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant)
+            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         Icon(imageVector = icon, contentDescription = null, tint = tint)
@@ -657,6 +789,35 @@ private fun TimelineRow(item: TimelineItem) {
             Text(item.time, style = MaterialTheme.typography.titleMedium, color = tint)
             Text(item.label, style = MaterialTheme.typography.bodyMedium)
         }
+    }
+}
+
+@Composable
+private fun SummaryRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    tint: Color,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .clickable { onClick() }
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+    ) {
+        Icon(imageVector = icon, contentDescription = null, tint = tint)
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleMedium)
+            if (subtitle.isNotBlank()) {
+                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        Icon(imageVector = Icons.Filled.ArrowForward, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 

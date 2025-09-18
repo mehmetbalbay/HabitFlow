@@ -1,6 +1,7 @@
 package com.habitflow.app.navigation
 
 sealed class AppRoute(val route: String) {
+    data object Splash : AppRoute("splash")
     data object Onboarding : AppRoute("onboarding")
     data object Login : AppRoute("login")
     data object Register : AppRoute("register")

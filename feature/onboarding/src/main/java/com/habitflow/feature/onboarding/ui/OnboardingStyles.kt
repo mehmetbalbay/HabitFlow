@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -104,6 +106,7 @@ fun OnboardingScreenScaffold(
     val colors = LocalOnboardingColors.current
     val dimens = LocalOnboardingDimens.current
     val horizontalPadding = dimens.horizontalPadding
+    val scrollState = rememberScrollState()
     OnboardingBackground(modifier = modifier) {
         Column(
             modifier = Modifier
@@ -163,7 +166,15 @@ fun OnboardingScreenScaffold(
                             Text(text = it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
-                    Column(content = content)
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f, fill = false)
+                            .verticalScroll(scrollState),
+                        verticalArrangement = Arrangement.spacedBy(20.dp)
+                    ) {
+                        Column(content = content)
+                    }
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Button(
                             modifier = Modifier.fillMaxWidth(),

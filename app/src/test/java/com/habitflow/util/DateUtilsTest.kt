@@ -1,6 +1,7 @@
 package com.habitflow.util
 
 import com.habitflow.domain.model.Habit
+import com.habitflow.core.ui.DateUtils
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

@@ -127,7 +127,7 @@ class AuthViewModelTest {
         every { networkException.cause } returns null
         coEvery { authRepository.loginWithGoogle(any()) } throws networkException
 
-        viewModel.signInWithGoogle("id-token")
+        viewModel.signInWithGoogle("id-token", null)
         dispatcherRule.testDispatcher.scheduler.advanceUntilIdle()
 
         val feedback = viewModel.uiState.value.feedback
@@ -141,13 +141,31 @@ class AuthViewModelTest {
         dispatcherRule.testDispatcher.scheduler.advanceUntilIdle()
 
         coVerify { preferences.setOnboardingCompleted(true) }
+        assertTrue(viewModel.uiState.value.onboardingCompleted)
     }
 
     @Test
-    fun `clears feedback after successful login`() {
+    fun `signOut clears user but keeps onboarding flag`() {
+        // Simulate user already seeing onboarding
+        onboardingState.value = true
+        authState.value = "user-42"
+        dispatcherRule.testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.signOut()
+
+        val state = viewModel.uiState.value
+        assertNull(state.userId)
+        assertTrue(state.onboardingCompleted)
+    }
+
+    @Test
+    fun `shows success feedback after successful login`() {
         coEvery { authRepository.login(any(), any()) } returns Unit
         viewModel.login("hello@habitflow.com", "password")
         dispatcherRule.testDispatcher.scheduler.advanceUntilIdle()
-        assertNull(viewModel.uiState.value.feedback)
+        
+        val feedback = viewModel.uiState.value.feedback
+        assertEquals(SUCCESS, feedback?.type)
+        assertEquals(R.string.auth_feedback_login_success_title, feedback?.titleRes)
     }
 }

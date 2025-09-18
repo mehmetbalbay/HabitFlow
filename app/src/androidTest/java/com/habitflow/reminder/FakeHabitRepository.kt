@@ -3,11 +3,10 @@ package com.habitflow.reminder
 import com.habitflow.domain.model.Habit
 import com.habitflow.domain.model.ReminderType
 import com.habitflow.domain.repository.HabitRepository
-import com.habitflow.core.ui.DateUtils
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import javax.inject.Inject
+import javax.inject.Singleton
 
 data class ToggleCall(val id: String, val date: String, val completed: Boolean)
 
@@ -35,7 +34,7 @@ class FakeHabitRepository @Inject constructor() : HabitRepository {
         val habit = Habit(
             id = name,
             name = name,
-            createdAt = DateUtils.todayKey(),
+            createdAt = todayKey(),
             reminderType = reminderType,
             reminderTime = reminderTime,
             weeklyDay = weeklyDay,
@@ -59,3 +58,5 @@ class FakeHabitRepository @Inject constructor() : HabitRepository {
 
     override fun onUserChanged(userId: String?) = Unit
 }
+
+private fun todayKey(): String = java.time.LocalDate.now().toString()

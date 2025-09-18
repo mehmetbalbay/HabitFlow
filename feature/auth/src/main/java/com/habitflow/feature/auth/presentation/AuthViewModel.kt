@@ -45,13 +45,15 @@ class AuthViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(
                     userId = userId,
                     onboardingCompleted = onboarding,
-                    userEmail = getCurrentUserEmail()
+                    userEmail = getCurrentUserEmail(),
+                    initialRouteResolved = true
                 )
             }
         }
     }
 
     fun markOnboardingSeen() {
+        _uiState.value = _uiState.value.copy(onboardingCompleted = true)
         viewModelScope.launch { preferences.setOnboardingCompleted(true) }
     }
 
@@ -263,7 +265,8 @@ data class AuthUiState(
     val userId: String? = null,
     val onboardingCompleted: Boolean = false,
     val feedback: AuthFeedback? = null,
-    val userEmail: String? = null
+    val userEmail: String? = null,
+    val initialRouteResolved: Boolean = false
 )
 
 data class AuthFeedback(
@@ -274,4 +277,3 @@ data class AuthFeedback(
 )
 
 enum class AuthFeedbackType { ERROR, INFO, SUCCESS }
-

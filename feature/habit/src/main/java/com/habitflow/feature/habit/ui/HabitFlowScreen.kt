@@ -2,10 +2,8 @@ package com.habitflow.feature.habit.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material3.*
@@ -45,7 +43,6 @@ fun HabitFlowScreen(
     onProfileClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val scrollState = rememberScrollState()
     val today = remember { LocalDate.now() }
     val dateFormatter = remember { DateTimeFormatter.ofPattern("d MMMM yyyy", Locale("tr")) }
     val dayFormatter = remember { DateTimeFormatter.ofPattern("EEE", Locale("tr")) }
@@ -61,7 +58,7 @@ fun HabitFlowScreen(
     ) {
         Column(
             modifier = Modifier
-                .verticalScroll(scrollState)
+                .fillMaxSize()
                 .padding(horizontal = HabitFlowDesign.screenPadding, vertical = HabitFlowDesign.screenPadding),
             verticalArrangement = Arrangement.spacedBy(HabitFlowDesign.sectionSpacing)
         ) {
